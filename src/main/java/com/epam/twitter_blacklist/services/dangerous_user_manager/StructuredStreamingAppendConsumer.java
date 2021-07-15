@@ -11,8 +11,7 @@ import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.types.StructType;
 
-import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.from_json;
+import static org.apache.spark.sql.functions.*;
 import static org.apache.spark.sql.types.DataTypes.StringType;
 
 public class StructuredStreamingAppendConsumer {
@@ -24,9 +23,14 @@ public class StructuredStreamingAppendConsumer {
 
         String bootstrapServer = "34.134.45.229:9092";
 
-        SparkSession spark = SparkSession.builder().appName("append application").master("local[*]").getOrCreate();
+        SparkSession spark = SparkSession.builder()
+                .appName("append application")
+                .master("local[*]")
+                .config("spark.mongodb.input.uri", "mongodb://127.0.0.1/TwitterBlacklist.BlacklistTwits")
+                .config("spark.mongodb.output.uri", "mongodb://127.0.0.1/TwitterBlacklist.BlacklistTwits")
+                .getOrCreate();
 
-        Dataset<Row> inputDF = spark
+        Dataset<Row> inputSuspiciousDF = spark
                 .readStream()
                 .format("kafka")
                 .option("kafka.bootstrap.servers", bootstrapServer)
@@ -34,12 +38,12 @@ public class StructuredStreamingAppendConsumer {
                 .option("startingOffsets", "earliest")
                 .load();
 
-        inputDF = inputDF.select(col("value").cast(StringType).alias("value"));
+        inputSuspiciousDF = inputSuspiciousDF.select(col("value").cast(StringType).alias("value"));
 
         StructType jsonSchema = Encoders.bean(SuspiciousActivity.class).schema();
 
 
-        Dataset<Row> parsedJsonDF = inputDF
+        Dataset<Row> parsedJsonDF = inputSuspiciousDF
                 .withColumn("parsed_json", from_json(col("value"), jsonSchema))
                 .select("parsed_json.*");
 
