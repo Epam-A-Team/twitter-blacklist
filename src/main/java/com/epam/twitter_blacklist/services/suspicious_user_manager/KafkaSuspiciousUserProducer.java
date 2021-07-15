@@ -15,7 +15,7 @@ public class KafkaSuspiciousUserProducer {
     public static void main(String[] args) {
 
         String topic = "user-suspicious-activity-topic";
-        String bootstrapServer = "35.232.111.66:9092";
+        String bootstrapServer = "34.134.45.229:9092";
         int chuckMessageCount = 100;
         int numOfChunks = 10;
 
@@ -32,7 +32,7 @@ public class KafkaSuspiciousUserProducer {
         for (int chunk = 0; chunk < numOfChunks; chunk++){
             for (int messageIdx = 1; messageIdx <= chuckMessageCount; messageIdx++){
                 int messageNumber = (chuckMessageCount * chunk) + messageIdx;
-                SuspiciousActivity appl = SuspiciousActivity.builder().userFullName("God").userAddress("Tel-Aviv").messageDate("01012000").message("I want's to kill ya! *" + messageIdx + "*").category("Murder").build();
+                SuspiciousActivity appl = SuspiciousActivity.builder().userFullName("God").userAddress("Tel-Aviv").messageDate("01012000").message("I want's to kill ya! *" + chunk + "*" + messageIdx + "*").category("Murder").build();
                 ObjectMapper Obj = new ObjectMapper();
 
                 String messageContent = Obj.writeValueAsString(appl);
