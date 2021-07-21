@@ -2,13 +2,8 @@ package com.epam.twitter_blacklist.services.dangerous_user_manager;
 
 import com.epam.twitter_blacklist.models.SuspiciousActivity;
 import com.mongodb.*;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.InsertManyOptions;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -19,7 +14,6 @@ import java.util.*;
 public class MongoDBHandler {
 
     public static void writeToMongo(SuspiciousActivity suspiciousActivity, MongoDatabase twitterBlacklistDB) {
-//        MongoDatabase twitterBlacklistDB = mongoClient.getDatabase("Twitter");
         MongoCollection<Document> userTweetCollection = twitterBlacklistDB.getCollection("BlacklistUserByGroupTwits");
 
         //Reading documents from MongoDB - if already exist: update, else: insert
@@ -34,7 +28,6 @@ public class MongoDBHandler {
 
         if (cursor.hasNext()) {
             // update
-            //System.out.println(cursor.next());
             BasicDBObject newDocument = new BasicDBObject();
 
             DBObject nextObject = cursor.next();
@@ -45,10 +38,9 @@ public class MongoDBHandler {
 
             Object message = nextObject.get("messages");
             List<String> messages = new ArrayList<>();
-            if (message instanceof List<?>) {//(message.getClass() == List<String>.class) { // instanceof
+            if (message instanceof List<?>) {
                 System.out.println("This is an Array");
-                messages = ((List<String>) message);
-            messages = (List<String>) message;
+                messages = (List<String>) message;
             } else { // x instanceof String
                 System.out.println("This is only a string");
                 messages.add((String) message);
@@ -69,23 +61,11 @@ public class MongoDBHandler {
             insertOneDocument(userTweetCollection, suspiciousActivity);
         }
 
-
-        //insertOneDocument(userTweetCollection, suspiciousActivity);
-            //insertManyDocuments(userTweetCollection, suspiciousActivity);
     }
     private static void insertOneDocument(MongoCollection<Document> userTweetCollection, SuspiciousActivity suspiciousActivity) {
         userTweetCollection.insertOne(generateNewSuspiciousAsDangerousUser(suspiciousActivity));
         System.out.println("One grade inserted for studentId " + suspiciousActivity.getUserId());
     }
-
-//    private static void insertManyDocuments(MongoCollection<Document> userTweetCollection, Dataset<Row> parsedJsonDF) {
-//        List<Document> grades = new ArrayList<>();
-//        for (int i = 1; i <= 10; i++) {
-//            grades.add(generateNewSuspiciousAsDangerousUser(10001d, "God" + i, "Morder", "mes " + i));
-//        }
-//        userTweetCollection.insertMany(grades, new InsertManyOptions().ordered(false));
-//        System.out.println("Ten grades inserted for studentId 10001.");
-//    }
 
     private static Document generateNewSuspiciousAsDangerousUser(SuspiciousActivity suspiciousActivity) {
         List<Document> messages = Collections.singletonList(new Document("message", suspiciousActivity.getMessage()));

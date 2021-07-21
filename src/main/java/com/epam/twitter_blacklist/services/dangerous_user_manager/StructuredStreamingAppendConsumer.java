@@ -3,7 +3,6 @@ package com.epam.twitter_blacklist.services.dangerous_user_manager;
 import com.epam.twitter_blacklist.models.SuspiciousActivity;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.*;
@@ -11,7 +10,6 @@ import org.apache.spark.sql.streaming.OutputMode;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.types.StructType;
-import org.bson.Document;
 
 import static org.apache.spark.sql.functions.*;
 import static org.apache.spark.sql.types.DataTypes.StringType;
@@ -28,8 +26,6 @@ public class StructuredStreamingAppendConsumer {
         SparkSession spark = SparkSession.builder()
                 .appName("append application")
                 .master("local[*]")
-//                .config("spark.mongodb.input.uri", "mongodb://127.0.0.1/Twitter.BlacklistUserByGroupTwits")
-//                .config("spark.mongodb.output.uri", "mongodb://127.0.0.1/Twitter.BlacklistUserByGroupTwits")
                 .getOrCreate();
 
         Dataset<Row> inputSuspiciousDF = spark
@@ -49,20 +45,15 @@ public class StructuredStreamingAppendConsumer {
                 .withColumn("parsed_json", from_json(col("value"), jsonSchema))
                 .select("parsed_json.*");
 
-        // filter specific data from input (from Kafka);
-//        Dataset<Row> outputDF = parsedJsonDF.select("userFullName","category", "message", "userId", "userAddress", "messageDate");
-
         Dataset<SuspiciousActivity> out = parsedJsonDF.as(Encoders.bean(SuspiciousActivity.class));
 
         StreamingQuery query = out
                 .writeStream()
-//                .option("checkpointLocation", "C:\\Users\\anafa\\Documents\\Twitterblacklistproject")
                 .outputMode(OutputMode.Append())
                 .foreachBatch((ds, batchId) -> {
                     ds.foreachPartition(part -> {
                         MongoClient mongoClient = MongoClients.create("mongodb://127.0.0.1:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false");
                         MongoDatabase twitterBlacklistDB = mongoClient.getDatabase("Twitter");
-//                        MongoCollection<Document> userTweetCollection = twitterBlacklistDB.getCollection("BlacklistUserByGroupTwits");
 
                         while (part.hasNext()){
                             MongoDBHandler.writeToMongo(part.next(), twitterBlacklistDB);
